@@ -5,8 +5,8 @@ export steamos_version=$(cat /etc/os-release | grep -i version_id | cut -d "=" -
 export MODEL=$(cat /sys/class/dmi/id/board_name)
 export BIOS_VERSION=$(cat /sys/class/dmi/id/bios_version)
 export DATE=$(date '+%T %d.%m.%Y')
-# ШАГ 1: Даунгрейд версии до релизной 1.0
-export RUDWEAK_VERSION="1.0 Z-EDITION" 
+# ШАГ 1: Даунгрейд версии до релизной 1.1
+export RUDWEAK_VERSION="1.1 Z-EDITION" 
 
 export LUA_PATH="/usr/share/gamescope/scripts/00-gamescope/displays/valve.steamdeck.lcd.lua"
 export MODIFIED_STRING="58, 59,\n        60, 61, 62, 63, 64, 65, 66, 67, 68, 69,\n        70"

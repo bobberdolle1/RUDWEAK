@@ -35,7 +35,7 @@ LOG_FILE="$HOME/RUDWEAK-install.log"
 # --- ИНТЕРФЕЙС ---
 
 draw_kremlin
-echo -e "${BLUE}Добро пожаловать в установщик RUDWEAK v1.0${NC}"
+echo -e "${BLUE}Добро пожаловать в установщик RUDWEAK v1.1${NC}"
 echo -e "${WHITE}Дата сборки: $DATE${NC}"
 echo -e "${WHITE}Устройство: ${YELLOW}$MODEL${NC}"
 
