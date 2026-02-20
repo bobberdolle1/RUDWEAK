@@ -25,6 +25,13 @@ elif [[ $steamos_version == "3.8" ]]; then
     sudo sed -i "s/3.5/main/g" /etc/pacman.conf &>/dev/null
     sudo sed -i "s/3.6/main/g" /etc/pacman.conf &>/dev/null
 fi
+
+# Увеличиваем таймауты для pacman (сервера SteamOS в РФ работают очень медленно)
+sudo sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf &>/dev/null
+sudo sed -i 's/^#XferCommand = \/usr\/bin\/curl -C - -f %u > %o/XferCommand = \/usr\/bin\/curl -C - -f --retry 3 --retry-delay 3 --speed-time 30 --speed-limit 1 -L %u > %o/' /etc/pacman.conf &>/dev/null
+sudo pacman-key --init &>/dev/null
+sudo pacman-key --populate &>/dev/null
+
 msg_ok '10%'
 
 # Install packages
