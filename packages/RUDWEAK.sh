@@ -120,3 +120,5 @@ write /sys/block/nvme*n*/queue/iosched/read_lat_nsec 1200000
 #write /sys/kernel/debug/sched/features NEXT_BUDDY
 #write /sys/kernel/debug/sched/migration_cost_ns 1000000
 #write /sys/kernel/debug/sched/nr_migrate 4
+
+exit 0
