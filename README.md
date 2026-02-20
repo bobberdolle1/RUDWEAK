@@ -104,4 +104,4 @@ A: Потому что внутри лежат все пакеты ядра, д�
 
 **Credits:**
 *   Based on SDWEAK by @noncatt
-*   RUDWEAK Fork, Offline Adaptation & Mega Z-Edition by @bobberdolle1 & @norevived
+*   RUDWEAK Fork, Offline Adaptation & Mega Z-Edition by @norevived
