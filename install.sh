@@ -185,6 +185,21 @@ run_with_bar "Генерация initramfs..." "sudo mkinitcpio -P"
 run_with_bar "Финализация GRUB..." "sudo grub-mkconfig -o $GRUB_CFG"
 run_with_bar "Уборка мусора..." "sudo systemctl daemon-reload"
 
+# Создание ярлыка для удаления
+msg_info "Создание ярлыка удаления на Рабочем столе..."
+UNINSTALL_DESKTOP="$HOME/Desktop/Удалить-RUDWEAK.desktop"
+cat <<EOF > "$UNINSTALL_DESKTOP"
+[Desktop Entry]
+Name=Удалить RUDWEAK
+Comment=Удаление RUDWEAK и возврат к стоку
+Exec=bash -c 'cd "$(pwd)" && chmod +x ./uninstall.sh && sudo --preserve-env=HOME bash ./uninstall.sh'
+Icon=steamdeck-gaming-return
+Terminal=true
+Type=Application
+Categories=System;Settings;
+EOF
+chmod +x "$UNINSTALL_DESKTOP"
+
 draw_final_boss
 
 read -p "Нажмите ENTER для перезагрузки в НОВЫЙ МИР..."
