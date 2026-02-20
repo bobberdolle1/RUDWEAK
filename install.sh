@@ -21,9 +21,11 @@ ANANICY_PKG="cachyos-ananicy-rules-git-latest-plus-SDWEAK.pkg.tar.zst"
 msg_info "Проверка обновлений..."
 if ping -c 1 8.8.8.8 &>/dev/null || ping -c 1 1.1.1.1 &>/dev/null; then
     LATEST_RELEASE=$(curl -s --max-time 5 https://api.github.com/repos/bobberdolle1/RUDWEAK/releases/latest)
-    LATEST_VERSION=$(echo "$LATEST_RELEASE" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    if [ ! -z "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "$RUDWEAK_VERSION" ] && [ "$LATEST_VERSION" != "v$RUDWEAK_VERSION" ]; then
-        echo -e "${YELLOW}Доступна новая версия RUDWEAK: $LATEST_VERSION! У вас: $RUDWEAK_VERSION${NC}"
+    LATEST_VERSION=$(echo "$LATEST_RELEASE" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//')
+    LOCAL_VERSION=$(echo "$RUDWEAK_VERSION" | awk '{print $1}')
+    
+    if [ ! -z "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "$LOCAL_VERSION" ]; then
+        echo -e "${YELLOW}Доступна новая версия RUDWEAK: $LATEST_VERSION! У вас: $LOCAL_VERSION${NC}"
         read -p "Желаете скачать новую версию? [y/N]: " update_ans
         if [[ "$update_ans" =~ ^[Yy]$ ]]; then
             echo -e "${GREEN}Открываю ссылку на скачивание...${NC}"
