@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Переходим в директорию скрипта, откуда бы он ни был запущен
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
 # Подключаем языки (формально, для совместимости)
 source ./packages/lang.sh
 
@@ -13,6 +16,30 @@ GAMESCOPE_PKG="gamescope-3.16.14.5-1-SDWEAK.pkg.tar.zst"
 VULKAN_PKG="vulkan-radeon-24.3.0-SDWEAK.pkg.tar.zst"
 ANANICY_PKG="cachyos-ananicy-rules-git-latest-plus-SDWEAK.pkg.tar.zst"
 # --------------------------------------------
+
+# Проверка интернета и версии
+msg_info "Проверка обновлений..."
+if ping -c 1 8.8.8.8 &>/dev/null || ping -c 1 1.1.1.1 &>/dev/null; then
+    LATEST_RELEASE=$(curl -s --max-time 5 https://api.github.com/repos/bobberdolle1/RUDWEAK/releases/latest)
+    LATEST_VERSION=$(echo "$LATEST_RELEASE" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    if [ ! -z "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "$RUDWEAK_VERSION" ] && [ "$LATEST_VERSION" != "v$RUDWEAK_VERSION" ]; then
+        echo -e "${YELLOW}Доступна новая версия RUDWEAK: $LATEST_VERSION! У вас: $RUDWEAK_VERSION${NC}"
+        read -p "Желаете скачать новую версию? [y/N]: " update_ans
+        if [[ "$update_ans" =~ ^[Yy]$ ]]; then
+            echo -e "${GREEN}Открываю ссылку на скачивание...${NC}"
+            if command -v xdg-open &>/dev/null; then
+                sudo -u $SUDO_USER xdg-open "https://github.com/bobberdolle1/RUDWEAK/releases/latest" 2>/dev/null || xdg-open "https://github.com/bobberdolle1/RUDWEAK/releases/latest" 2>/dev/null
+            fi
+            echo -e "${WHITE}Если браузер не открылся, перейдите по ссылке: https://github.com/bobberdolle1/RUDWEAK/releases/latest${NC}"
+            echo -e "${RED}Завершение текущей установки.${NC}"
+            exit 0
+        fi
+    else
+        msg_ok "У вас актуальная версия."
+    fi
+else
+    msg_warn "Нет интернета. Проверка обновлений пропущена."
+fi
 
 # Проверка прав суперпользователя
 check_root
@@ -35,7 +62,7 @@ LOG_FILE="$HOME/RUDWEAK-install.log"
 # --- ИНТЕРФЕЙС ---
 
 draw_kremlin
-echo -e "${BLUE}Добро пожаловать в установщик RUDWEAK v1.1${NC}"
+echo -e "${BLUE}Добро пожаловать в установщик RUDWEAK v$RUDWEAK_VERSION${NC}"
 echo -e "${WHITE}Дата сборки: $DATE${NC}"
 echo -e "${WHITE}Устройство: ${YELLOW}$MODEL${NC}"
 

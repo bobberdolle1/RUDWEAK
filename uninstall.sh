@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Переходим в директорию скрипта, откуда бы он ни был запущен
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
 # Connect a common script with functions and variables
 source ./scripts/common.sh
 
