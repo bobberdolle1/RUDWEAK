@@ -78,6 +78,7 @@ fi
 # Инициализация Pacman
 echo ""
 msg_info "Подготовка плацдарма..."
+run_with_bar "Настройка сети (Анти-Таймаут РФ)..." "sudo bash -c 'grep -q \"^DisableDownloadTimeout\" /etc/pacman.conf || sed -i \"/^\\[options\\]/a DisableDownloadTimeout\" /etc/pacman.conf' && sudo sed -i 's/^#XferCommand = \\/usr\\/bin\\/curl.*/XferCommand = \\/usr\\/bin\\/curl -C - -f --retry 10 --retry-delay 3 --speed-time 60 --speed-limit 1 -L %u > %o/g' /etc/pacman.conf"
 run_with_bar "Инициализация ключей Pacman..." "sudo pacman-key --init && sudo pacman-key --populate"
 run_with_bar "Очистка кэша от мусора..." "sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*}"
 # Оффлайн режим - фейковый синк для галочки, ошибки игнорируем

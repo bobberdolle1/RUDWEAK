@@ -27,8 +27,8 @@ elif [[ $steamos_version == "3.8" ]]; then
 fi
 
 # Увеличиваем таймауты для pacman (сервера SteamOS в РФ работают очень медленно)
-sudo sed -i 's/^#DisableDownloadTimeout/DisableDownloadTimeout/' /etc/pacman.conf &>/dev/null
-sudo sed -i 's/^#XferCommand = \/usr\/bin\/curl -C - -f %u > %o/XferCommand = \/usr\/bin\/curl -C - -f --retry 3 --retry-delay 3 --speed-time 30 --speed-limit 1 -L %u > %o/' /etc/pacman.conf &>/dev/null
+sudo bash -c 'grep -q "^DisableDownloadTimeout" /etc/pacman.conf || sed -i "/^\[options\]/a DisableDownloadTimeout" /etc/pacman.conf'
+sudo sed -i 's/^#XferCommand = \/usr\/bin\/curl.*/XferCommand = \/usr\/bin\/curl -C - -f --retry 10 --retry-delay 3 --speed-time 60 --speed-limit 1 -L %u > %o/g' /etc/pacman.conf
 sudo pacman-key --init &>/dev/null
 sudo pacman-key --populate &>/dev/null
 
