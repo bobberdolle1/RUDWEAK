@@ -3,21 +3,6 @@
 # Переходим в директорию скрипта, откуда бы он ни был запущен
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
-# Проверка структуры файлов
-if [ ! -f "./packages/lang.sh" ] || [ ! -f "./scripts/common.sh" ]; then
-    echo "ОШИБКА: Неправильная структура файлов!"
-    echo "Убедитесь, что вы распаковали архив полностью и запускаете install.sh из корневой папки RUDWEAK."
-    echo ""
-    echo "Ожидаемая структура:"
-    echo "  RUDWEAK/"
-    echo "  ├── install.sh"
-    echo "  ├── packages/"
-    echo "  │   └── lang.sh"
-    echo "  └── scripts/"
-    echo "      └── common.sh"
-    exit 1
-fi
-
 # Подключаем языки (формально, для совместимости)
 source ./packages/lang.sh
 

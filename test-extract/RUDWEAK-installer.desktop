@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Установить RUDWEAK
+Comment=Установка RUDWEAK - оптимизированная версия для РФ
+Exec=bash -c 'cd "$(dirname "%k")" && chmod +x ./install.sh && sudo --preserve-env=HOME bash ./install.sh'
+Icon=steamdeck-gaming-return
+Terminal=true
+Type=Application
+Categories=System;Settings;
