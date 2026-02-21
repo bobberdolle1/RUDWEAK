@@ -93,26 +93,34 @@ fi
 # Инициализация Pacman
 echo ""
 msg_info "Подготовка плацдарма..."
-run_with_bar "Настройка Pacman (Оффлайн режим)..." "sudo bash -c 'grep -q \"^DisableDownloadTimeout\" /etc/pacman.conf || sed -i \"/^\\[options\\]/a DisableDownloadTimeout\" /etc/pacman.conf'"
-run_with_bar "Инициализация ключей Pacman..." "sudo pacman-key --init && sudo pacman-key --populate || true"
-run_with_bar "Очистка кэша от мусора..." "sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*} || true"
-msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
+echo -ne "${WHITE}Настройка Pacman (Оффлайн режим)...${NC} "
+sudo bash -c 'grep -q "^DisableDownloadTimeout" /etc/pacman.conf || sed -i "/^\[options\]/a DisableDownloadTimeout" /etc/pacman.conf' >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
 
-# Установка зависимостей (SKIP - sed already installed on SteamOS)
-# run_with_bar "Установка системных утилит..." "sudo pacman -S --noconfirm sed"
+echo -ne "${WHITE}Инициализация ключей Pacman...${NC} "
+(sudo pacman-key --init && sudo pacman-key --populate) >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+
+echo -ne "${WHITE}Очистка кэша от мусора...${NC} "
+sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*} >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+
+msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
 
 # Yet-tweak
 echo ""
 msg_info "Применяем базовые твики..."
-run_with_bar "Настройка прав доступа..." "sudo chmod 775 ./scripts/yet-tweak.sh"
-run_with_bar "Запуск скрипта оптимизации..." "sudo --preserve-env=HOME ./scripts/yet-tweak.sh"
+echo -ne "${WHITE}Настройка прав доступа...${NC} "
+sudo chmod 775 ./scripts/yet-tweak.sh >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+
+echo -ne "${WHITE}Запуск скрипта оптимизации...${NC} "
+sudo --preserve-env=HOME ./scripts/yet-tweak.sh >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
 
 # Ananicy-cpp (Демон)
 echo ""
 msg_info "Установка планировщика процессов..."
-run_with_bar "Подготовка демона Ananicy..." "sudo chmod 775 ./scripts/daemon-install.sh"
-# Передаем переменную ANANICY_PKG внутрь скрипта
-run_with_bar "Инъекция правил приоритета..." "sudo --preserve-env=HOME ANANICY_PKG=\"$ANANICY_PKG\" ./scripts/daemon-install.sh"
+echo -ne "${WHITE}Подготовка демона Ananicy...${NC} "
+sudo chmod 775 ./scripts/daemon-install.sh >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+
+echo -ne "${WHITE}Инъекция правил приоритета...${NC} "
+sudo --preserve-env=HOME ANANICY_PKG="$ANANICY_PKG" ./scripts/daemon-install.sh >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
 
 # Sysctl & Services
 echo ""
@@ -122,7 +130,9 @@ sudo mkdir -p $HOME/.local/tweak/
 sudo cp -f ./packages/RUDWEAK.sh $HOME/.local/tweak/RUDWEAK.sh
 sudo cp -f ./packages/tweak.service /etc/systemd/system/tweak.service
 sudo chmod 777 $HOME/.local/tweak/RUDWEAK.sh
-run_with_bar "Активация RUDWEAK сервиса..." "sudo systemctl enable --now tweak.service"
+
+echo -ne "${WHITE}Активация RUDWEAK сервиса...${NC} "
+sudo systemctl enable --now tweak.service >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
 
 # I/O Schedulers
 sudo cp ./packages/60-ioschedulers.rules /etc/udev/rules.d/60-ioschedulers.rules
@@ -181,9 +191,15 @@ echo "N = Макс. производительность (AAA игры)"
 echo "Y = Экономия батареи (Инди/Эмуляторы)"
 read -p "Включить эконом-режим? [y/N]: " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    sudo systemctl enable --now energy.timer &>/dev/null && msg_ok "Режим экономии включен" || msg_err "Ошибка активации"
+    if [ -f "./packages/energy.service" ] && [ -f "./packages/energy.timer" ]; then
+        sudo cp -f ./packages/energy.service /etc/systemd/system/energy.service
+        sudo cp -f ./packages/energy.timer /etc/systemd/system/energy.timer
+        sudo systemctl enable --now energy.timer >> "$LOG_FILE" 2>&1 && msg_ok "Режим экономии включен" || msg_err "Ошибка активации"
+    else
+        msg_err "Файлы energy.service/timer не найдены"
+    fi
 else
-    sudo systemctl disable --now energy.timer &>/dev/null && msg_ok "Режим максимальной мощности" || msg_err "Ошибка"
+    sudo systemctl disable --now energy.timer >> "$LOG_FILE" 2>&1 && msg_ok "Режим максимальной мощности" || msg_ok "Режим максимальной мощности (уже активен)"
 fi
 
 # ЯДРО (Самое важное)
