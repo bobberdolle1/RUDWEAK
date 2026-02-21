@@ -191,7 +191,7 @@ echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
 read -p "Установить оптимизированное ядро? [Y/n]: " answer
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Удаление старого ядра...${NC} "
-    sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers >> "$LOG_FILE" 2>&1
+    sudo pacman -Rdd --noconfirm linux-neptune-611 >> "$LOG_FILE" 2>&1
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
@@ -271,9 +271,22 @@ Terminal=true
 Type=Application
 Categories=System;Settings;
 EOF
-chmod +x "$UNINSTALL_DESKTOP"
+chmod +x "$UNINSTALL_DESKTOP" 2>/dev/null
 
-draw_final_boss
+clear
+echo -e "${GREEN}"
+echo "       __         __"
+echo "      /  \.-\"\"\"-./  \\"
+echo "           -   -    "
+echo "     /|   o   o   |\\"
+echo "      \  .-'''-.  /"
+echo "       '-\__Y__/-'"
+echo "         \`---\`"
+echo ""
+echo -e "${RED}RUDWEAK УСТАНОВЛЕН!${NC}"
+echo -e "${WHITE}Система оптимизирована.${NC}"
+echo -e "${BLUE}Перезагрузка...${NC}"
+echo ""
 
 read -p "Нажмите ENTER для перезагрузки в НОВЫЙ МИР..."
 sudo reboot
