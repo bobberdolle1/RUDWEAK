@@ -192,7 +192,11 @@ read -p "Установить оптимизированное ядро? [Y/n]: 
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Удаление старого ядра...${NC} "
     sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers >> "$LOG_FILE" 2>&1
-    echo -e "${GREEN}[ГОТОВО]${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+    fi
     
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
     if sudo pacman -U --noconfirm ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
