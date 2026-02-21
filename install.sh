@@ -205,6 +205,7 @@ run_with_bar "Уборка мусора..." "sudo systemctl daemon-reload"
 # Создание ярлыка для удаления
 msg_info "Создание ярлыка удаления на Рабочем столе..."
 UNINSTALL_DESKTOP="$HOME/Desktop/Удалить-RUDWEAK.desktop"
+mkdir -p "$HOME/Desktop" 2>/dev/null
 cat <<EOF > "$UNINSTALL_DESKTOP"
 [Desktop Entry]
 Name=Удалить RUDWEAK
