@@ -31,34 +31,38 @@ sudo bash -c 'grep -q "^DisableDownloadTimeout" /etc/pacman.conf || sed -i "/^\[
 
 green_msg '10%'
 
-# Offline mode - skip all repo downloads
-log "INSTALL DEPS (SKIPPED - OFFLINE MODE)" >> "$LOG_FILE" 2>&1
+# OFFLINE MODE - Install from local packages
+log "INSTALL DEPS (LOCAL PACKAGES)" >> "$LOG_FILE" 2>&1
+sudo pacman -U --noconfirm ./packages/fmt-11.1.1-2-x86_64.pkg.tar.zst >> "$LOG_FILE" 2>&1
 green_msg '20%'
+sudo pacman -U --noconfirm ./packages/spdlog-1.15.0-2-x86_64.pkg.tar.zst >> "$LOG_FILE" 2>&1
 green_msg '30%'
 
-log "INSTALL GLIBC (SKIPPED - ALREADY INSTALLED)" >> "$LOG_FILE" 2>&1
+log "GLIBC ALREADY INSTALLED" >> "$LOG_FILE" 2>&1
 green_msg '40%'
 
-# Ananicy-cpp install (OFFLINE MODE - NO REPO DOWNLOADS)
-log "INSTALL ANANICY-CPP PACKAGES" >> "$LOG_FILE" 2>&1
+# Ananicy-cpp install (LOCAL PACKAGES)
+log "INSTALL ANANICY-CPP (LOCAL PACKAGE)" >> "$LOG_FILE" 2>&1
 sudo systemctl disable --now scx &>/dev/null
 sudo systemctl mask scx &>/dev/null
 green_msg '50%'
 sudo pacman -Rdd --noconfirm ananicy-cpp cachyos-ananicy-rules-git >> "$LOG_FILE" 2>&1
 green_msg '60%'
-log "ANANICY-CPP SKIPPED - WILL BE INSTALLED WITH RULES PACKAGE" >> "$LOG_FILE" 2>&1
+sudo pacman -U --noconfirm ./packages/ananicy-cpp-1.1.1-7-x86_64.pkg.tar.zst >> "$LOG_FILE" 2>&1
 green_msg '70%'
+sudo systemctl unmask ananicy-cpp &>/dev/null
+sudo systemctl enable --now ananicy-cpp >> "$LOG_FILE" 2>&1
 green_msg '80%'
 
-# Install ananicy-rules (LOCAL PACKAGE ONLY)
+# Install ananicy-rules (EXTRACT DIRECTLY - pacman -U hangs)
 sudo rm -rf /etc/ananicy.d/{*,.*} &>/dev/null
-log "INSTALL RULES ANANICY (LOCAL PACKAGE)" >> "$LOG_FILE" 2>&1
-if [ -f "./packages/$ANANICY_PKG" ]; then
-    sudo pacman -U "./packages/$ANANICY_PKG" --noconfirm >> "$LOG_FILE" 2>&1 || log "ANANICY RULES INSTALL FAILED - CONTINUING" >> "$LOG_FILE" 2>&1
-else
-    log "ERROR: ANANICY PACKAGE NOT FOUND: ./packages/$ANANICY_PKG" >> "$LOG_FILE" 2>&1
-fi
+log "INSTALL RULES ANANICY (EXTRACT DIRECTLY)" >> "$LOG_FILE" 2>&1
+CURRENT_DIR=$(pwd)
+cd /tmp
+tar --use-compress-program=unzstd -xf "$CURRENT_DIR/packages/$ANANICY_PKG" >> "$LOG_FILE" 2>&1
+sudo cp -r /tmp/etc/ananicy.d/* /etc/ananicy.d/ >> "$LOG_FILE" 2>&1
+rm -rf /tmp/etc >> "$LOG_FILE" 2>&1
+cd "$CURRENT_DIR"
 green_msg '90%'
-sudo systemctl unmask ananicy-cpp &>/dev/null
-sudo systemctl enable --now ananicy-cpp >> "$LOG_FILE" 2>&1 || log "ANANICY-CPP SERVICE FAILED (NORMAL IF NOT INSTALLED)" >> "$LOG_FILE" 2>&1
+sudo systemctl restart ananicy-cpp >> "$LOG_FILE" 2>&1
 green_msg '100%'
