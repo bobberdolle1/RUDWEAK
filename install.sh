@@ -143,10 +143,18 @@ if [ "$MODEL" = "Jupiter" ]; then
     read -p "Установить Gamescope фикс? [Y/n]: " answer
     if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
         echo -ne "${WHITE}Установка Gamescope...${NC} "
-        sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+        if sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}[ГОТОВО]${NC}"
+        else
+            echo -e "${RED}[СБОЙ]${NC}"
+        fi
         
         echo -ne "${WHITE}Установка Vulkan драйверов...${NC} "
-        sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+        if sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}[ГОТОВО]${NC}"
+        else
+            echo -e "${RED}[СБОЙ]${NC}"
+        fi
         
         msg_info "lib32-vulkan-radeon пропущен (оффлайн режим)"
     else
@@ -183,17 +191,30 @@ echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
 read -p "Установить оптимизированное ядро? [Y/n]: " answer
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Удаление старого ядра...${NC} "
-    sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers >> "$LOG_FILE" 2>&1 || true
+    sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers >> "$LOG_FILE" 2>&1
     echo -e "${GREEN}[ГОТОВО]${NC}"
     
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
-    sudo pacman -U --noconfirm ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    if sudo pacman -U --noconfirm ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${RED}[СБОЙ]${NC}"
+        msg_err "Проверьте лог: $LOG_FILE"
+    fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
-    sudo pacman -U --noconfirm ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    if sudo pacman -U --noconfirm ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${RED}[СБОЙ]${NC}"
+    fi
     
     echo -ne "${WHITE}Обновление GRUB...${NC} "
-    sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    if sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1; then
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${RED}[СБОЙ]${NC}"
+    fi
     
     sudo cp -f ./packages/thp-shrinker.conf /usr/lib/tmpfiles.d/thp-shrinker.conf
 else
@@ -212,13 +233,25 @@ fi
 # Финал
 echo ""
 echo -ne "${WHITE}Генерация initramfs...${NC} "
-sudo mkinitcpio -P >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+if sudo mkinitcpio -P >> "$LOG_FILE" 2>&1; then
+    echo -e "${GREEN}[ГОТОВО]${NC}"
+else
+    echo -e "${RED}[СБОЙ]${NC}"
+fi
 
 echo -ne "${WHITE}Финализация GRUB...${NC} "
-sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+if sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1; then
+    echo -e "${GREEN}[ГОТОВО]${NC}"
+else
+    echo -e "${RED}[СБОЙ]${NC}"
+fi
 
 echo -ne "${WHITE}Уборка мусора...${NC} "
-sudo systemctl daemon-reload >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+if sudo systemctl daemon-reload >> "$LOG_FILE" 2>&1; then
+    echo -e "${GREEN}[ГОТОВО]${NC}"
+else
+    echo -e "${RED}[СБОЙ]${NC}"
+fi
 
 # Создание ярлыка для удаления
 msg_info "Создание ярлыка удаления на Рабочем столе..."
