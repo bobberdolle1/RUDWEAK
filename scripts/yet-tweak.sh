@@ -40,5 +40,5 @@ backup_file /usr/lib/sysctl.d/60-crash-hook.conf &>/dev/null
 backup_file /usr/lib/sysctl.d/20-sched.conf &>/dev/null
 sudo rm -f /usr/lib/sysctl.d/50-coredump.conf /etc/udev/rules.d/64-ioschedulers.rules /usr/lib/sysctl.d/60-crash-hook.conf /usr/lib/sysctl.d/20-sched.conf
 
-# Remove gamemoded
-sudo pacman -Rdd --noconfirm gamemode &>/dev/null
+# Remove gamemoded (SKIP - offline mode, may not be installed)
+sudo pacman -Rdd --noconfirm gamemode &>/dev/null || true

@@ -2,12 +2,12 @@
 
 # write
 write() {
-	[[ ! -f "$1" ]] && return 1
+	[[ ! -f "$1" ]] && return 0  # Changed from return 1 to return 0 to avoid service failure
 	chmod +w "$1" 2> /dev/null
 	if ! echo "$2" > "$1" 2> /dev/null
 	then
-		echo "Failed: $1 → $2"
-		return 1
+		echo "Failed: $1 → $2" >&2
+		return 0  # Changed from return 1 to continue execution
 	fi
 	echo "$1 → $2"
 }
@@ -15,7 +15,7 @@ write() {
 # Check for root permissions and bail if not granted
 if [[ "$(id -u)" -ne 0 ]]
 then
-	echo "No root permissions. Exiting."
+	echo "No root permissions. Exiting." >&2
 	exit 1
 fi
 

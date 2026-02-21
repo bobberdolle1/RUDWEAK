@@ -5,8 +5,7 @@ export steamos_version=$(cat /etc/os-release | grep -i version_id | cut -d "=" -
 export MODEL=$(cat /sys/class/dmi/id/board_name)
 export BIOS_VERSION=$(cat /sys/class/dmi/id/bios_version)
 export DATE=$(date '+%T %d.%m.%Y')
-# ШАГ 1: Даунгрейд версии до релизной 1.1
-export RUDWEAK_VERSION="1.0 Z-EDITION" 
+export RUDWEAK_VERSION="1.0" 
 
 export LUA_PATH="/usr/share/gamescope/scripts/00-gamescope/displays/valve.steamdeck.lcd.lua"
 export MODIFIED_STRING="58, 59,\n        60, 61, 62, 63, 64, 65, 66, 67, 68, 69,\n        70"
@@ -28,6 +27,7 @@ msg_info() { echo -e "${BLUE}[ИНФО]${NC} $1"; }
 msg_ok()   { echo -e "${GREEN}[УСПЕХ]${NC} $1"; }
 msg_warn() { echo -e "${YELLOW}[ВНИМАНИЕ]${NC} $1"; }
 msg_err()  { echo -e "${RED}[ОШИБКА]${NC} $1"; }
+green_msg() { echo -e "${GREEN}[ПРОГРЕСС]${NC} $1"; }
 log() { echo "[LOG] --- $1"; }
 
 # ШАГ 3: Эпичные ASCII-арты

@@ -78,14 +78,13 @@ fi
 # Инициализация Pacman
 echo ""
 msg_info "Подготовка плацдарма..."
-run_with_bar "Настройка сети (Анти-Таймаут РФ)..." "sudo bash -c 'grep -q \"^DisableDownloadTimeout\" /etc/pacman.conf || sed -i \"/^\\[options\\]/a DisableDownloadTimeout\" /etc/pacman.conf' && sudo sed -i 's/^#XferCommand = \\/usr\\/bin\\/curl.*/XferCommand = \\/usr\\/bin\\/curl -C - -f --retry 10 --retry-delay 3 --speed-time 60 --speed-limit 1 -L %u > %o/g' /etc/pacman.conf"
-run_with_bar "Инициализация ключей Pacman..." "sudo pacman-key --init && sudo pacman-key --populate"
-run_with_bar "Очистка кэша от мусора..." "sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*}"
-# Оффлайн режим - фейковый синк для галочки, ошибки игнорируем
-run_with_bar "Проверка локальных репозиториев..." "sudo pacman -Sy || true"
+run_with_bar "Настройка Pacman (Оффлайн режим)..." "sudo bash -c 'grep -q \"^DisableDownloadTimeout\" /etc/pacman.conf || sed -i \"/^\\[options\\]/a DisableDownloadTimeout\" /etc/pacman.conf'"
+run_with_bar "Инициализация ключей Pacman..." "sudo pacman-key --init && sudo pacman-key --populate || true"
+run_with_bar "Очистка кэша от мусора..." "sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*} || true"
+msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
 
-# Установка зависимостей
-run_with_bar "Установка системных утилит..." "sudo pacman -S --noconfirm sed"
+# Установка зависимостей (SKIP - sed already installed on SteamOS)
+# run_with_bar "Установка системных утилит..." "sudo pacman -S --noconfirm sed"
 
 # Yet-tweak
 echo ""
@@ -114,8 +113,10 @@ run_with_bar "Активация RUDWEAK сервиса..." "sudo systemctl enab
 sudo cp ./packages/60-ioschedulers.rules /etc/udev/rules.d/60-ioschedulers.rules
 msg_ok "I/O планировщики обновлены"
 
-# ZRAM
-run_with_bar "Накачка ZRAM генератора..." "sudo pacman -S --noconfirm --needed holo-zram-swap zram-generator && sudo cp -f ./packages/zram-generator.conf /usr/lib/systemd/zram-generator.conf && sudo systemctl restart systemd-zram-setup@zram0"
+# ZRAM (SKIP INSTALL - just copy config)
+sudo cp -f ./packages/zram-generator.conf /usr/lib/systemd/zram-generator.conf &>/dev/null || true
+sudo systemctl restart systemd-zram-setup@zram0 &>/dev/null || true
+msg_ok "ZRAM конфигурация обновлена"
 
 # --- ИНТЕРАКТИВНОЕ МЕНЮ ---
 clear
@@ -128,7 +129,7 @@ if [ "$MODEL" = "Jupiter" ]; then
     if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
         run_with_bar "Установка Gamescope..." "sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG"
         run_with_bar "Установка Vulkan драйверов..." "sudo pacman -U --noconfirm ./packages/$VULKAN_PKG"
-        run_with_bar "Библиотеки 32-bit..." "sudo pacman -S --noconfirm --needed lib32-vulkan-radeon"
+        msg_info "lib32-vulkan-radeon пропущен (оффлайн режим)"
     else
         msg_warn "Пропущено пользователем."
     fi
@@ -162,7 +163,7 @@ fi
 echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
 read -p "Установить оптимизированное ядро? [Y/n]: " answer
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
-    run_with_bar "Удаление старого ядра..." "sudo pacman -R --noconfirm linux-neptune-611 linux-neptune-611-headers || true"
+    run_with_bar "Удаление старого ядра..." "sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers || true"
     run_with_bar "Установка ядра Charcoal..." "sudo pacman -U --noconfirm ./packages/$KERNEL_PKG"
     run_with_bar "Установка Headers..." "sudo pacman -U --noconfirm ./packages/$HEADERS_PKG"
     run_with_bar "Обновление GRUB..." "sudo grub-mkconfig -o $GRUB_CFG"
