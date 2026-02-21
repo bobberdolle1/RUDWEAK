@@ -142,8 +142,12 @@ if [ "$MODEL" = "Jupiter" ]; then
     echo -e "${YELLOW}>> ФИКС ФРЕЙМТАЙМА (LCD)${NC}"
     read -p "Установить Gamescope фикс? [Y/n]: " answer
     if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
-        run_with_bar "Установка Gamescope..." "sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG"
-        run_with_bar "Установка Vulkan драйверов..." "sudo pacman -U --noconfirm ./packages/$VULKAN_PKG"
+        echo -ne "${WHITE}Установка Gamescope...${NC} "
+        sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+        
+        echo -ne "${WHITE}Установка Vulkan драйверов...${NC} "
+        sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+        
         msg_info "lib32-vulkan-radeon пропущен (оффлайн режим)"
     else
         msg_warn "Пропущено пользователем."
@@ -169,19 +173,28 @@ echo "N = Макс. производительность (AAA игры)"
 echo "Y = Экономия батареи (Инди/Эмуляторы)"
 read -p "Включить эконом-режим? [y/N]: " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    run_with_bar "Включение режима экономии..." "sudo systemctl enable --now energy.timer"
+    sudo systemctl enable --now energy.timer &>/dev/null && msg_ok "Режим экономии включен" || msg_err "Ошибка активации"
 else
-    run_with_bar "Включение режима МАКСИМАЛЬНОЙ МОЩНОСТИ..." "sudo systemctl disable --now energy.timer"
+    sudo systemctl disable --now energy.timer &>/dev/null && msg_ok "Режим максимальной мощности" || msg_err "Ошибка"
 fi
 
 # ЯДРО (Самое важное)
 echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
 read -p "Установить оптимизированное ядро? [Y/n]: " answer
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
-    run_with_bar "Удаление старого ядра..." "sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers || true"
-    run_with_bar "Установка ядра Charcoal..." "sudo pacman -U --noconfirm ./packages/$KERNEL_PKG"
-    run_with_bar "Установка Headers..." "sudo pacman -U --noconfirm ./packages/$HEADERS_PKG"
-    run_with_bar "Обновление GRUB..." "sudo grub-mkconfig -o $GRUB_CFG"
+    echo -ne "${WHITE}Удаление старого ядра...${NC} "
+    sudo pacman -Rdd --noconfirm linux-neptune-611 linux-neptune-611-headers >> "$LOG_FILE" 2>&1 || true
+    echo -e "${GREEN}[ГОТОВО]${NC}"
+    
+    echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
+    sudo pacman -U --noconfirm ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    
+    echo -ne "${WHITE}Установка Headers...${NC} "
+    sudo pacman -U --noconfirm ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    
+    echo -ne "${WHITE}Обновление GRUB...${NC} "
+    sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+    
     sudo cp -f ./packages/thp-shrinker.conf /usr/lib/tmpfiles.d/thp-shrinker.conf
 else
     msg_warn "Оставлено стоковое ядро."
@@ -198,9 +211,14 @@ fi
 
 # Финал
 echo ""
-run_with_bar "Генерация initramfs..." "sudo mkinitcpio -P"
-run_with_bar "Финализация GRUB..." "sudo grub-mkconfig -o $GRUB_CFG"
-run_with_bar "Уборка мусора..." "sudo systemctl daemon-reload"
+echo -ne "${WHITE}Генерация initramfs...${NC} "
+sudo mkinitcpio -P >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+
+echo -ne "${WHITE}Финализация GRUB...${NC} "
+sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
+
+echo -ne "${WHITE}Уборка мусора...${NC} "
+sudo systemctl daemon-reload >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${RED}[СБОЙ]${NC}"
 
 # Создание ярлыка для удаления
 msg_info "Создание ярлыка удаления на Рабочем столе..."
