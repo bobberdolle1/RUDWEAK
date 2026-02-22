@@ -306,15 +306,16 @@ msg_info "Создание ярлыка удаления на Рабочем с�
 UNINSTALL_DESKTOP="$HOME/Desktop/Удалить-RUDWEAK.desktop"
 RUDWEAK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "$HOME/Desktop" 2>/dev/null
-cat <<EOF > "$UNINSTALL_DESKTOP"
+cat > "$UNINSTALL_DESKTOP" <<EOF
 [Desktop Entry]
 Name=Удалить RUDWEAK
 Comment=Удаление RUDWEAK и возврат к стоку
-Exec=konsole -e bash -c 'cd "$RUDWEAK_DIR" && chmod +x ./uninstall.sh && sudo bash ./uninstall.sh; read -p "Нажмите Enter для выхода..."'
+Exec=konsole --hold -e bash -c 'cd "$RUDWEAK_DIR" && chmod +x ./uninstall.sh && sudo bash ./uninstall.sh'
 Icon=steamdeck-gaming-return
 Terminal=false
 Type=Application
 Categories=System;Settings;
+Path=$RUDWEAK_DIR
 EOF
 chmod +x "$UNINSTALL_DESKTOP" 2>/dev/null
 
