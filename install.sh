@@ -175,14 +175,14 @@ if [ "$MODEL" = "Jupiter" ]; then
     fi
     
     echo -e "${YELLOW}>> РАЗГОН ЭКРАНА 70Hz (LCD)${NC}"
-    read -p "Активировать 70Hz? [y/N]: " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
+    read -p "Активировать 70Hz? [Y/n]: " answer
+    if [[ "$answer" =~ ^[Nn]$ ]]; then
+        msg_warn "Оставлено 60Hz."
+    else
         if ! grep -q "68, 69," "$LUA_PATH"; then
             sudo sed -z -i.bak "s/$ORIGINAL_STRING/$MODIFIED_STRING/" "$LUA_PATH"
         fi
-        msg_ok "Экран разогнан!"
-    else
-        msg_warn "Оставлено 60Hz."
+        msg_ok "Экран разогнан до 70Hz!"
     fi
 else
     msg_info "Steam Deck OLED (Galileo) обнаружен. Фиксы экрана пропущены (не требуются)."
@@ -190,10 +190,12 @@ fi
 
 # Power Efficiency
 echo -e "${YELLOW}>> ЭНЕРГОЭФФЕКТИВНОСТЬ CPU${NC}"
+echo "Y = Экономия батареи (Инди/Эмуляторы) [по умолчанию]"
 echo "N = Макс. производительность (AAA игры)"
-echo "Y = Экономия батареи (Инди/Эмуляторы)"
-read -p "Включить эконом-режим? [y/N]: " answer
-if [[ "$answer" =~ ^[Yy]$ ]]; then
+read -p "Включить эконом-режим? [Y/n]: " answer
+if [[ "$answer" =~ ^[Nn]$ ]]; then
+    sudo systemctl disable --now energy.timer >> "$LOG_FILE" 2>&1 && msg_ok "Режим максимальной мощности" || msg_ok "Режим максимальной мощности (уже активен)"
+else
     if [ -f "./packages/energy.service" ] && [ -f "./packages/energy.timer" ]; then
         sudo cp -f ./packages/energy.service /etc/systemd/system/energy.service
         sudo cp -f ./packages/energy.timer /etc/systemd/system/energy.timer
@@ -201,8 +203,7 @@ if [[ "$answer" =~ ^[Yy]$ ]]; then
     else
         msg_err "Файлы energy.service/timer не найдены"
     fi
-else
-    sudo systemctl disable --now energy.timer >> "$LOG_FILE" 2>&1 && msg_ok "Режим максимальной мощности" || msg_ok "Режим максимальной мощности (уже активен)"
+fi
 fi
 
 # ЯДРО (Самое важное)
@@ -229,17 +230,18 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     
     echo -ne "${WHITE}Установка Headers...${NC} "
     # Extract headers directly - pacman tries to download pahole dependency
+    CURRENT_DIR=$(pwd)
     cd /tmp
-    tar --use-compress-program=unzstd -xf "$PWD/packages/$HEADERS_PKG" >> "$LOG_FILE" 2>&1
+    tar --use-compress-program=unzstd -xf "$CURRENT_DIR/packages/$HEADERS_PKG" >> "$LOG_FILE" 2>&1
     if [ -d "/tmp/usr/src" ]; then
         sudo cp -r /tmp/usr/src/* /usr/src/ >> "$LOG_FILE" 2>&1
-        sudo cp -r /tmp/usr/lib/modules/*/build /usr/lib/modules/*/  >> "$LOG_FILE" 2>&1 || true
+        sudo cp -r /tmp/usr/lib/modules/*/build /usr/lib/modules/*/ >> "$LOG_FILE" 2>&1 || true
         rm -rf /tmp/usr >> "$LOG_FILE" 2>&1
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
         echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
     fi
-    cd - > /dev/null
+    cd "$CURRENT_DIR"
     
     echo -ne "${WHITE}Обновление GRUB...${NC} "
     if sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1; then
@@ -265,13 +267,16 @@ fi
 # Финал
 echo ""
 echo -ne "${WHITE}Генерация initramfs...${NC} "
-# Only run if charcoal kernel is installed
-if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ]; then
+# Only run if charcoal kernel is installed and preset exists
+if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ] && [ -f "/etc/mkinitcpio.d/linux-charcoal-611.preset" ]; then
     if sudo mkinitcpio -p linux-charcoal-611 >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
-        echo -e "${YELLOW}[ПРОПУЩЕНО - используется старый initramfs]${NC}"
+        echo -e "${YELLOW}[ПРОПУЩЕНО - есть ошибки]${NC}"
     fi
+else
+    echo -e "${YELLOW}[ПРОПУЩЕНО - preset не найден]${NC}"
+fi
 else
     echo -e "${YELLOW}[ПРОПУЩЕНО - ядро Charcoal не установлено]${NC}"
 fi
