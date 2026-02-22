@@ -220,8 +220,9 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
     if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
-        # Create proper mkinitcpio preset for charcoal kernel
+        # Create proper mkinitcpio preset for charcoal kernel and fix line endings
         sudo cp -f ./packages/linux-charcoal-611.preset /etc/mkinitcpio.d/linux-charcoal-611.preset >> "$LOG_FILE" 2>&1
+        sudo sed -i 's/\r$//' /etc/mkinitcpio.d/linux-charcoal-611.preset >> "$LOG_FILE" 2>&1
     else
         echo -e "${RED}[СБОЙ]${NC}"
         msg_err "Проверьте лог: $LOG_FILE"
