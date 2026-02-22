@@ -6,6 +6,9 @@ source ./scripts/common.sh
 # Restore stock grub
 restore_file "$GRUB"
 
+# Fix line endings in grub config (Windows CRLF -> Unix LF)
+sudo dos2unix /etc/default/grub 2>/dev/null || sudo sed -i 's/\r$//' /etc/default/grub
+
 # Activate MGLRU
 cat << EOF | sudo tee /etc/tmpfiles.d/mglru.conf &>/dev/null
 w /sys/kernel/mm/lru_gen/enabled - - - - 7

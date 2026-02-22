@@ -223,7 +223,7 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
-    if sudo pacman -U --noconfirm ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
+    if sudo pacman -U --noconfirm --nodeps ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
         echo -e "${RED}[СБОЙ]${NC}"
