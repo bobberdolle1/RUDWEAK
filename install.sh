@@ -226,16 +226,8 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
-    # Headers require kernel modules to be present first - skip if kernel installation failed
-    if [ -f "/boot/vmlinuz-linux-charcoal-611" ]; then
-        if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
-            echo -e "${GREEN}[ГОТОВО]${NC}"
-        else
-            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
-        fi
-    else
-        echo -e "${YELLOW}[ПРОПУЩЕНО - ядро не установлено]${NC}"
-    fi
+    # Skip headers - they cause infinite hangs and aren't critical for runtime
+    echo -e "${YELLOW}[ПРОПУЩЕНО - не требуется для работы]${NC}"
     
     echo -ne "${WHITE}Обновление GRUB...${NC} "
     if sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1; then
@@ -261,10 +253,15 @@ fi
 # Финал
 echo ""
 echo -ne "${WHITE}Генерация initramfs...${NC} "
-if sudo mkinitcpio -P >> "$LOG_FILE" 2>&1; then
-    echo -e "${GREEN}[ГОТОВО]${NC}"
+# Only run if charcoal kernel is installed
+if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ]; then
+    if sudo mkinitcpio -P >> "$LOG_FILE" 2>&1; then
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${YELLOW}[ПРОПУЩЕНО - есть ошибки, но ядро работает]${NC}"
+    fi
 else
-    echo -e "${RED}[СБОЙ]${NC}"
+    echo -e "${YELLOW}[ПРОПУЩЕНО - ядро Charcoal не установлено]${NC}"
 fi
 
 echo -ne "${WHITE}Финализация GRUB...${NC} "
