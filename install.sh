@@ -220,14 +220,26 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
     if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
+        # Create proper mkinitcpio preset for charcoal kernel
+        sudo cp -f ./packages/linux-charcoal-611.preset /etc/mkinitcpio.d/linux-charcoal-611.preset >> "$LOG_FILE" 2>&1
     else
         echo -e "${RED}[СБОЙ]${NC}"
         msg_err "Проверьте лог: $LOG_FILE"
     fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
-    # Skip headers - they cause infinite hangs and aren't critical for runtime
-    echo -e "${YELLOW}[ПРОПУЩЕНО - не требуется для работы]${NC}"
+    # Extract headers directly - pacman tries to download pahole dependency
+    cd /tmp
+    tar --use-compress-program=unzstd -xf "$PWD/packages/$HEADERS_PKG" >> "$LOG_FILE" 2>&1
+    if [ -d "/tmp/usr/src" ]; then
+        sudo cp -r /tmp/usr/src/* /usr/src/ >> "$LOG_FILE" 2>&1
+        sudo cp -r /tmp/usr/lib/modules/*/build /usr/lib/modules/*/  >> "$LOG_FILE" 2>&1 || true
+        rm -rf /tmp/usr >> "$LOG_FILE" 2>&1
+        echo -e "${GREEN}[ГОТОВО]${NC}"
+    else
+        echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+    fi
+    cd - > /dev/null
     
     echo -ne "${WHITE}Обновление GRUB...${NC} "
     if sudo grub-mkconfig -o $GRUB_CFG >> "$LOG_FILE" 2>&1; then
@@ -255,10 +267,10 @@ echo ""
 echo -ne "${WHITE}Генерация initramfs...${NC} "
 # Only run if charcoal kernel is installed
 if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ]; then
-    if sudo mkinitcpio -P >> "$LOG_FILE" 2>&1; then
+    if sudo mkinitcpio -p linux-charcoal-611 >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
-        echo -e "${YELLOW}[ПРОПУЩЕНО - есть ошибки, но ядро работает]${NC}"
+        echo -e "${YELLOW}[ПРОПУЩЕНО - используется старый initramfs]${NC}"
     fi
 else
     echo -e "${YELLOW}[ПРОПУЩЕНО - ядро Charcoal не установлено]${NC}"

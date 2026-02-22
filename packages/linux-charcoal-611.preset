@@ -1,0 +1,10 @@
+# mkinitcpio preset file for the 'linux-charcoal-611' package
+
+ALL_kver="6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty"
+
+PRESETS=('default' 'fallback')
+
+default_image="/boot/initramfs-linux-charcoal-611.img"
+
+fallback_image="/boot/initramfs-linux-charcoal-611-fallback.img"
+fallback_options="-S autodetect"
