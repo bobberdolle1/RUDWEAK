@@ -102,6 +102,9 @@ echo -ne "${WHITE}Инициализация ключей Pacman...${NC} "
 echo -ne "${WHITE}Очистка кэша от мусора...${NC} "
 sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*} >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
 
+echo -ne "${WHITE}Удаление блокировки БД...${NC} "
+sudo rm -f /usr/lib/holo/pacmandb/db.lck >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+
 msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
 
 # Yet-tweak
@@ -215,7 +218,7 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     fi
     
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
-    if sudo pacman -U --noconfirm ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
+    if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$KERNEL_PKG >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
         echo -e "${RED}[СБОЙ]${NC}"
@@ -223,15 +226,15 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
-    # Install all dependency packages first
-    for dep_pkg in ./packages/gcc-*.pkg.tar.zst ./packages/llvm-*.pkg.tar.zst ./packages/clang-*.pkg.tar.zst ./packages/lld-*.pkg.tar.zst ./packages/polly-*.pkg.tar.zst ./packages/compiler-rt-*.pkg.tar.zst ./packages/libisl-*.pkg.tar.zst ./packages/libmpc-*.pkg.tar.zst; do
-        [ -f "$dep_pkg" ] && sudo pacman -U --noconfirm --needed --asdeps "$dep_pkg" >> "$LOG_FILE" 2>&1
-    done
-    # Then install headers
-    if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
-        echo -e "${GREEN}[ГОТОВО]${NC}"
+    # Headers require kernel modules to be present first - skip if kernel installation failed
+    if [ -f "/boot/vmlinuz-linux-charcoal-611" ]; then
+        if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}[ГОТОВО]${NC}"
+        else
+            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+        fi
     else
-        echo -e "${RED}[СБОЙ]${NC}"
+        echo -e "${YELLOW}[ПРОПУЩЕНО - ядро не установлено]${NC}"
     fi
     
     echo -ne "${WHITE}Обновление GRUB...${NC} "
