@@ -1,9 +1,0 @@
-[Unit]
-Description=RUDWEAK
-After=network.target
-[Service]
-Type=oneshot
-ExecStart=/home/deck/.local/tweak/RUDWEAK.sh
-TimeoutSec=15
-[Install]
-WantedBy=multi-user.target

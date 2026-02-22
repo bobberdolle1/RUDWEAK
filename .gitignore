@@ -3,4 +3,5 @@
 *.log
 *.zip
 *.pkg.tar.zst
+*.tar.gz
 release_notes.txt
