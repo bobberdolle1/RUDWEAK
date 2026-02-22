@@ -32,9 +32,15 @@ VULKAN_PKG="vulkan-radeon-24.3.0-SDWEAK.pkg.tar.zst"
 ANANICY_PKG="cachyos-ananicy-rules-git-latest-plus-SDWEAK.pkg.tar.zst"
 # --------------------------------------------
 
-# Проверка интернета и версии
+# Source Smart Hybrid Installer
+source ./scripts/smart-installer.sh
+
+# Проверка интернета и версии (с умной логикой)
 msg_info "Проверка обновлений..."
-if ping -c 1 8.8.8.8 &>/dev/null || ping -c 1 1.1.1.1 &>/dev/null; then
+NETWORK_AVAILABLE=false
+
+if check_network; then
+    NETWORK_AVAILABLE=true
     LATEST_RELEASE=$(curl -s --max-time 5 https://api.github.com/repos/bobberdolle1/RUDWEAK/releases/latest)
     LATEST_VERSION=$(echo "$LATEST_RELEASE" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//')
     LOCAL_VERSION=$(echo "$RUDWEAK_VERSION" | awk '{print $1}')
@@ -55,6 +61,7 @@ if ping -c 1 8.8.8.8 &>/dev/null || ping -c 1 1.1.1.1 &>/dev/null; then
         msg_ok "У вас актуальная версия."
     fi
 else
+    NETWORK_AVAILABLE=false
     msg_warn "Нет интернета. Проверка обновлений пропущена."
 fi
 
@@ -105,7 +112,61 @@ sudo rm -rf /home/.steamos/offload/var/cache/pacman/pkg/{*,.*} >> "$LOG_FILE" 2>
 echo -ne "${WHITE}Удаление блокировки БД...${NC} "
 sudo rm -f /usr/lib/holo/pacmandb/db.lck >> "$LOG_FILE" 2>&1 && echo -e "${GREEN}[ГОТОВО]${NC}" || echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
 
-msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
+# Smart Hybrid Installer: Show installation mode selection
+if [ "$NETWORK_AVAILABLE" = true ]; then
+    echo ""
+    echo -e "${GREEN}[OK]${NC} Отличное интернет-соединение обнаружено!"
+    echo -e "${CYAN}[INFO]${NC} Вы можете выбрать режим установки."
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}  ${BLUE}RUDWEAK - Выбор режима установки${NC}                      ${CYAN}║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  ${GREEN}1)${NC} Онлайн-установка (ЭКСПЕРИМЕНТАЛЬНО)"
+    echo -e "     └─ Попытка скачать свежие версии из репозиториев"
+    echo ""
+    echo -e "  ${YELLOW}2)${NC} Оффлайн-установка (РЕКОМЕНДУЕТСЯ)"
+    echo -e "     └─ Использовать стабильные пакеты из архива"
+    echo ""
+    echo -e "${CYAN}─────────────────────────────────────────────────────────────${NC}"
+    
+    INSTALL_MODE=""
+    while true; do
+        read -rp "Ваш выбор [1/2] (по умолчанию: 2): " choice
+        choice=${choice:-2}
+        case "$choice" in
+            1)
+                echo -e "${GREEN}[OK]${NC} Выбран режим: Онлайн-установка"
+                INSTALL_MODE="online"
+                msg_warn "ВНИМАНИЕ: Онлайн-режим экспериментальный! Могут быть проблемы с зависимостями."
+                break
+                ;;
+            2)
+                echo -e "${YELLOW}[OK]${NC} Выбран режим: Оффлайн-установка"
+                INSTALL_MODE="offline"
+                break
+                ;;
+            *)
+                echo -e "${RED}[ERROR]${NC} Неверный ввод. Введите 1 или 2."
+                ;;
+        esac
+    done
+else
+    echo ""
+    echo -e "${RED}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║${NC}  ${YELLOW}ВНИМАНИЕ!${NC} Сеть недоступна или работает нестабильно  ${RED}║${NC}"
+    echo -e "${RED}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${YELLOW}[AUTO]${NC} Автоматическая активация автономного режима..."
+    INSTALL_MODE="offline"
+    sleep 2
+fi
+
+if [ "$INSTALL_MODE" = "offline" ]; then
+    msg_info "Режим: ПОЛНОСТЬЮ ОФФЛАЙН (без загрузки из репозиториев)"
+else
+    msg_info "Режим: ОНЛАЙН (попытка обновления пакетов из репозиториев)"
+fi
 
 # Yet-tweak
 echo ""
@@ -155,18 +216,38 @@ if [ "$MODEL" = "Jupiter" ]; then
     echo -e "${YELLOW}>> ФИКС ФРЕЙМТАЙМА (LCD)${NC}"
     read -p "Установить Gamescope фикс? [Y/n]: " answer
     if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
-        echo -ne "${WHITE}Установка Gamescope...${NC} "
+    echo -ne "${WHITE}Установка Gamescope...${NC} "
+    if [ "$INSTALL_MODE" = "online" ]; then
+        if sudo pacman -Sy --noconfirm gamescope >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}[ГОТОВО - ОНЛАЙН]${NC}"
+        elif sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}[ГОТОВО - FALLBACK]${NC}"
+        else
+            echo -e "${RED}[СБОЙ]${NC}"
+        fi
+    else
         if sudo pacman -U --noconfirm ./packages/$GAMESCOPE_PKG >> "$LOG_FILE" 2>&1; then
             echo -e "${GREEN}[ГОТОВО]${NC}"
         else
             echo -e "${RED}[СБОЙ]${NC}"
         fi
+    fi
         
         echo -ne "${WHITE}Установка Vulkan драйверов...${NC} "
-        if sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1; then
-            echo -e "${GREEN}[ГОТОВО]${NC}"
+        if [ "$INSTALL_MODE" = "online" ]; then
+            if sudo pacman -Sy --noconfirm vulkan-radeon >> "$LOG_FILE" 2>&1; then
+                echo -e "${GREEN}[ГОТОВО - ОНЛАЙН]${NC}"
+            elif sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1; then
+                echo -e "${GREEN}[ГОТОВО - FALLBACK]${NC}"
+            else
+                echo -e "${RED}[СБОЙ]${NC}"
+            fi
         else
-            echo -e "${RED}[СБОЙ]${NC}"
+            if sudo pacman -U --noconfirm ./packages/$VULKAN_PKG >> "$LOG_FILE" 2>&1; then
+                echo -e "${GREEN}[ГОТОВО]${NC}"
+            else
+                echo -e "${RED}[СБОЙ]${NC}"
+            fi
         fi
         
         msg_info "lib32-vulkan-radeon пропущен (оффлайн режим)"
