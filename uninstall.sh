@@ -72,6 +72,7 @@ echo -ne "${WHITE}Удаление ядра Charcoal...${NC} "
 sudo pacman -Rdd --noconfirm linux-charcoal-611 linux-charcoal-611-headers &>/dev/null
 sudo rm -f /usr/lib/tmpfiles.d/thp-shrinker.conf &>/dev/null
 sudo rm -f /etc/mkinitcpio.d/linux-charcoal-611.preset &>/dev/null
+sudo rm -f /etc/mkinitcpio-charcoal.conf &>/dev/null
 echo -e "${GREEN}[ГОТОВО]${NC}"
 
 # AMDGPU optimization

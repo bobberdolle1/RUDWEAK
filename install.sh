@@ -175,14 +175,14 @@ if [ "$MODEL" = "Jupiter" ]; then
     fi
     
     echo -e "${YELLOW}>> РАЗГОН ЭКРАНА 70Hz (LCD)${NC}"
-    read -p "Активировать 70Hz? [Y/n]: " answer
-    if [[ "$answer" =~ ^[Nn]$ ]]; then
-        msg_warn "Оставлено 60Hz."
-    else
+    read -p "Активировать 70Hz? [y/N]: " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
         if ! grep -q "68, 69," "$LUA_PATH"; then
             sudo sed -z -i.bak "s/$ORIGINAL_STRING/$MODIFIED_STRING/" "$LUA_PATH"
         fi
         msg_ok "Экран разогнан до 70Hz!"
+    else
+        msg_warn "Оставлено 60Hz."
     fi
 else
     msg_info "Steam Deck OLED (Galileo) обнаружен. Фиксы экрана пропущены (не требуются)."
@@ -190,12 +190,10 @@ fi
 
 # Power Efficiency
 echo -e "${YELLOW}>> ЭНЕРГОЭФФЕКТИВНОСТЬ CPU${NC}"
-echo "Y = Экономия батареи (Инди/Эмуляторы) [по умолчанию]"
 echo "N = Макс. производительность (AAA игры)"
-read -p "Включить эконом-режим? [Y/n]: " answer
-if [[ "$answer" =~ ^[Nn]$ ]]; then
-    sudo systemctl disable --now energy.timer >> "$LOG_FILE" 2>&1 && msg_ok "Режим максимальной мощности" || msg_ok "Режим максимальной мощности (уже активен)"
-else
+echo "Y = Экономия батареи (Инди/Эмуляторы)"
+read -p "Включить эконом-режим? [y/N]: " answer
+if [[ "$answer" =~ ^[Yy]$ ]]; then
     if [ -f "./packages/energy.service" ] && [ -f "./packages/energy.timer" ]; then
         sudo cp -f ./packages/energy.service /etc/systemd/system/energy.service
         sudo cp -f ./packages/energy.timer /etc/systemd/system/energy.timer
@@ -203,6 +201,9 @@ else
     else
         msg_err "Файлы energy.service/timer не найдены"
     fi
+else
+    sudo systemctl disable --now energy.timer >> "$LOG_FILE" 2>&1 || true
+    msg_ok "Режим максимальной мощности"
 fi
 
 # ЯДРО (Самое важное)
@@ -211,14 +212,13 @@ read -p "Установить оптимизированное ядро? [Y/n]: 
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Удаление старого ядра...${NC} "
     if sudo pacman -Q linux-neptune-611 &>/dev/null; then
-        sudo pacman -Rdd --noconfirm linux-neptune-611 >> "$LOG_FILE" 2>&1
-        if [ $? -eq 0 ]; then
+        if sudo pacman -Rdd --noconfirm linux-neptune-611 >> "$LOG_FILE" 2>&1; then
             echo -e "${GREEN}[ГОТОВО]${NC}"
         else
-            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+            echo -e "${RED}[СБОЙ]${NC}"
         fi
     else
-        echo -e "${YELLOW}[УЖЕ УДАЛЕНО]${NC}"
+        echo -e "${GREEN}[ГОТОВО - уже удалено]${NC}"
     fi
     
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
@@ -227,6 +227,8 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
         # Create proper mkinitcpio preset for charcoal kernel and fix line endings
         sudo cp -f ./packages/linux-charcoal-611.preset /etc/mkinitcpio.d/linux-charcoal-611.preset >> "$LOG_FILE" 2>&1
         sudo sed -i 's/\r$//' /etc/mkinitcpio.d/linux-charcoal-611.preset >> "$LOG_FILE" 2>&1
+        # Copy optimized mkinitcpio config to suppress Steam Deck irrelevant warnings
+        sudo cp -f ./packages/mkinitcpio-charcoal.conf /etc/mkinitcpio-charcoal.conf >> "$LOG_FILE" 2>&1
     else
         echo -e "${RED}[СБОЙ]${NC}"
         msg_err "Проверьте лог: $LOG_FILE"
@@ -273,15 +275,12 @@ echo ""
 echo -ne "${WHITE}Генерация initramfs...${NC} "
 # Only run if charcoal kernel is installed and preset exists
 if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ] && [ -f "/etc/mkinitcpio.d/linux-charcoal-611.preset" ]; then
-    if sudo mkinitcpio -p linux-charcoal-611 >> "$LOG_FILE" 2>&1; then
+    sudo mkinitcpio -c /etc/mkinitcpio-charcoal.conf -p linux-charcoal-611 >> "$LOG_FILE" 2>&1
+    # Check if initramfs was created
+    if [ -f "/boot/initramfs-linux-charcoal-611.img" ]; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
-        # Check if initramfs was created despite errors
-        if [ -f "/boot/initramfs-linux-charcoal-611.img" ]; then
-            echo -e "${GREEN}[ГОТОВО - с предупреждениями]${NC}"
-        else
-            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
-        fi
+        echo -e "${RED}[СБОЙ]${NC}"
     fi
 else
     echo -e "${YELLOW}[ПРОПУЩЕНО - preset не найден]${NC}"
