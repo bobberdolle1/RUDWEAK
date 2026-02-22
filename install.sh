@@ -204,7 +204,6 @@ else
         msg_err "Файлы energy.service/timer не найдены"
     fi
 fi
-fi
 
 # ЯДРО (Самое важное)
 echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
@@ -276,9 +275,6 @@ if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ] 
     fi
 else
     echo -e "${YELLOW}[ПРОПУЩЕНО - preset не найден]${NC}"
-fi
-else
-    echo -e "${YELLOW}[ПРОПУЩЕНО - ядро Charcoal не установлено]${NC}"
 fi
 
 echo -ne "${WHITE}Финализация GRUB...${NC} "
