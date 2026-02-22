@@ -223,6 +223,11 @@ if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     fi
     
     echo -ne "${WHITE}Установка Headers...${NC} "
+    # Install all dependency packages first
+    for dep_pkg in ./packages/gcc-*.pkg.tar.zst ./packages/llvm-*.pkg.tar.zst ./packages/clang-*.pkg.tar.zst ./packages/lld-*.pkg.tar.zst ./packages/polly-*.pkg.tar.zst ./packages/compiler-rt-*.pkg.tar.zst ./packages/libisl-*.pkg.tar.zst ./packages/libmpc-*.pkg.tar.zst; do
+        [ -f "$dep_pkg" ] && sudo pacman -U --noconfirm --needed --asdeps "$dep_pkg" >> "$LOG_FILE" 2>&1
+    done
+    # Then install headers
     if sudo pacman -U --noconfirm --nodeps --overwrite '*' ./packages/$HEADERS_PKG >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
