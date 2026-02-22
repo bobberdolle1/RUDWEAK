@@ -210,11 +210,15 @@ echo -e "${RED}>> ЯДРО LINUX CHARCOAL${NC}"
 read -p "Установить оптимизированное ядро? [Y/n]: " answer
 if [[ "$answer" =~ ^[Yy]$ || -z "$answer" ]]; then
     echo -ne "${WHITE}Удаление старого ядра...${NC} "
-    sudo pacman -Rdd --noconfirm linux-neptune-611 >> "$LOG_FILE" 2>&1
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}[ГОТОВО]${NC}"
+    if sudo pacman -Q linux-neptune-611 &>/dev/null; then
+        sudo pacman -Rdd --noconfirm linux-neptune-611 >> "$LOG_FILE" 2>&1
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}[ГОТОВО]${NC}"
+        else
+            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+        fi
     else
-        echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+        echo -e "${YELLOW}[УЖЕ УДАЛЕНО]${NC}"
     fi
     
     echo -ne "${WHITE}Установка ядра Charcoal...${NC} "
@@ -272,7 +276,12 @@ if [ -d "/usr/lib/modules/6.11.11-valve27-1-charcoal-611-g60ef8556a811-dirty" ] 
     if sudo mkinitcpio -p linux-charcoal-611 >> "$LOG_FILE" 2>&1; then
         echo -e "${GREEN}[ГОТОВО]${NC}"
     else
-        echo -e "${YELLOW}[ПРОПУЩЕНО - есть ошибки]${NC}"
+        # Check if initramfs was created despite errors
+        if [ -f "/boot/initramfs-linux-charcoal-611.img" ]; then
+            echo -e "${GREEN}[ГОТОВО - с предупреждениями]${NC}"
+        else
+            echo -e "${YELLOW}[ПРОПУЩЕНО]${NC}"
+        fi
     fi
 else
     echo -e "${YELLOW}[ПРОПУЩЕНО - preset не найден]${NC}"
